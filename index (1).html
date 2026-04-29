@@ -947,12 +947,31 @@ async function connectWallet() {
     if (CONTRACT_ADDRESS !== 'PASTE_CONTRACT_ADDRESS_HERE') {
       contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
       await loadStats();
-      await checkUserPact();
+await checkUserPact();
+await loadUserData();   // 👈 ADD THIS LINE
     } else {
       showToast('❌','Contract address not set. Paste it into CONTRACT_ADDRESS.');
     }
   } catch(e) {
     showToast('❌','Connection failed: '+e.message);
+  }
+}
+async function loadUserData() {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const userAddress = await signer.getAddress();
+
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+
+  const data = await contract.getSaverInfo(userAddress);
+
+  // 🟢 get private goal
+  const goal = localStorage.getItem("goal_" + userAddress) || "No goal set";
+
+  if (data.amount > 0) {
+    document.getElementById("pact-goal-text").innerText = goal;
+    document.getElementById("pact-amount").innerText =
+      ethers.utils.formatEther(data.amount) + " ETH";
   }
 }
 
@@ -966,7 +985,7 @@ async function loadStatsPublic() {
     document.getElementById('stat-pool').textContent     = parseFloat(ethers.utils.formatEther(pool)).toFixed(3);
     document.getElementById('stat-savers').textContent   = count.toString();
     // Fetch all saver details for goal wall + completed count
-    const addrs = await roContract.getAllSavers();
+   // const addrs = await roContract.getAllSavers();
     if (addrs.length > 0) {
       const infos = await Promise.all(addrs.map(a => roContract.getSaverInfo(a)));
       allSavers = addrs.map((addr, i) => ({ addr, ...infos[i] }));
@@ -991,7 +1010,7 @@ async function loadStats() {
     document.getElementById('stat-locked').textContent   = parseFloat(ethers.utils.formatEther(locked)).toFixed(3);
     document.getElementById('stat-pool').textContent     = parseFloat(ethers.utils.formatEther(pool)).toFixed(3);
     document.getElementById('stat-savers').textContent   = count.toString();
-    const addrs = await contract.getAllSavers();
+    // const addrs = await contract.getAllSavers(); ❌ removed for privacy
     if (addrs.length > 0) {
       const infos = await Promise.all(addrs.map(a => contract.getSaverInfo(a)));
       allSavers = addrs.map((addr, i) => ({ addr, ...infos[i] }));
@@ -1071,9 +1090,16 @@ async function handleDeposit() {
     return;
   }
   try {
-    const tx = await contract.deposit(days, goalWithCat, {
-      value: ethers.utils.parseEther(amt.toString())
-    });
+    // 🟢 store goal privately
+const walletAddress = await signer.getAddress();
+localStorage.setItem("goal_" + walletAddress, goal);
+
+// ❌ hide goal from blockchain
+const fakeGoal = "Hidden";
+
+const tx = await contract.deposit(days, fakeGoal, {
+  value: ethers.utils.parseEther(amt.toString())
+});
     showToast('⏳','Transaction submitted… waiting for confirmation');
     await tx.wait();
     showToast('🎉','Pact created! Your commitment is now on-chain.');
