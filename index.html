@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PactPool — Commitment Capital Protocol</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07090c;--bg2:#0c0f14;--bg3:#12161d;--bg4:#181d26;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --accent:#b4ff47;--accent-dim:rgba(180,255,71,0.12);--accent-glow:rgba(180,255,71,0.25);
+  --blue:#47b4ff;--blue-dim:rgba(71,180,255,0.1);
+  --purple:#a47fff;--red:#ff5757;--orange:#ffaa47;
+  --text:#dde2ee;--muted:#4a5268;--muted2:#6e7a96;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:200;background:rgba(7,9,12,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 36px;display:flex;align-items:center;height:60px;gap:0;}
+.nav-logo{display:flex;align-items:center;gap:10px;margin-right:32px;text-decoration:none;}
+.nav-hex{width:30px;height:30px;position:relative;display:flex;align-items:center;justify-content:center;}
+.nav-hex svg{width:30px;height:30px;}
+.logo-text{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
+.logo-text span{color:var(--accent);}
+.nav-links{display:flex;align-items:center;gap:2px;margin-right:auto;}
+.nav-links a{color:var(--muted2);text-decoration:none;font-size:13px;font-weight:600;padding:6px 14px;border-radius:8px;transition:all .2s;letter-spacing:.01em;}
+.nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--bg3);}
+.nav-links a.active{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-chain{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted2);}
+.chain-dot{width:6px;height:6px;border-radius:50%;background:#4CAF50;animation:pulse-dot 2s ease infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,175,80,0.4);}50%{opacity:.7;box-shadow:0 0 0 4px rgba(76,175,80,0);}}
+#wallet-btn{background:var(--accent);color:#07090c;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;letter-spacing:.02em;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#wallet-btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+#wallet-btn.connected{background:var(--bg3);color:var(--accent);border:1px solid rgba(180,255,71,0.2);}
+
+/* ── HERO ── */
+.hero{position:relative;padding:72px 36px 56px;text-align:center;overflow:hidden;}
+.hero-glow{position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,rgba(180,255,71,0.05) 0%,transparent 65%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(180,255,71,0.07);border:1px solid rgba(180,255,71,0.18);border-radius:999px;padding:5px 16px 5px 12px;font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px;font-family:'JetBrains Mono',monospace;}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.hero h1{font-size:clamp(46px,8vw,92px);font-weight:800;line-height:.9;letter-spacing:-.04em;margin-bottom:18px;}
+.hero h1 .line2{color:var(--accent);display:block;}
+.hero-sub{max-width:500px;margin:0 auto 36px;font-size:15px;color:var(--muted2);line-height:1.7;font-weight:400;}
+.hero-cta{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
+.btn-primary{background:var(--accent);color:#07090c;border:none;padding:11px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .25s;letter-spacing:.01em;}
+.btn-primary:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 12px 32px rgba(180,255,71,0.2);}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border2);padding:11px 28px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;transition:all .25s;}
+.btn-secondary:hover{background:var(--bg3);border-color:var(--border2);}
+
+/* ── STATS STRIP ── */
+.stats-strip{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);}
+.stat-item{flex:1;padding:20px 24px;text-align:center;border-right:1px solid var(--border);position:relative;}
+.stat-item:last-child{border-right:none;}
+.stat-val{font-size:26px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1;letter-spacing:-.03em;}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-top:6px;font-family:'JetBrains Mono',monospace;}
+.stat-change{font-size:10px;color:#4CAF50;font-family:'JetBrains Mono',monospace;margin-top:3px;}
+
+/* ── TICKER ── */
+.ticker-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 0;overflow:hidden;}
+.ticker-inner{display:flex;gap:48px;animation:marquee 36s linear infinite;white-space:nowrap;width:max-content;}
+.ticker-inner:hover{animation-play-state:paused;}
+@keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.tick-item{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted2);}
+.tick-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.td-green{background:var(--accent);}
+.td-red{background:var(--red);}
+.td-blue{background:var(--blue);}
+.tick-item strong{color:var(--text);font-weight:500;}
+
+/* ── MAIN LAYOUT ── */
+.main-wrap{max-width:1140px;margin:0 auto;padding:52px 36px 100px;display:grid;grid-template-columns:1fr 400px;gap:28px;align-items:start;}
+.left-col{display:flex;flex-direction:column;gap:22px;}
+
+/* ── ACTIVE PACT CARD ── */
+.active-pact{background:var(--bg2);border:1px solid rgba(180,255,71,0.18);border-radius:18px;overflow:hidden;display:none;}
+.ap-header{background:rgba(180,255,71,0.05);padding:18px 22px;border-bottom:1px solid rgba(180,255,71,0.1);display:flex;justify-content:space-between;align-items:center;}
+.ap-header h3{font-size:14px;font-weight:700;letter-spacing:.01em;}
+.status-pill{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:999px;}
+.s-locked{background:rgba(164,127,255,0.12);border:1px solid rgba(164,127,255,0.25);color:var(--purple);}
+.s-matured{background:rgba(180,255,71,0.1);border:1px solid rgba(180,255,71,0.25);color:var(--accent);}
+.s-broken{background:rgba(255,87,87,0.1);border:1px solid rgba(255,87,87,0.25);color:var(--red);}
+.ap-body{padding:22px;}
+.pact-goal{font-size:20px;font-weight:700;margin-bottom:18px;line-height:1.35;color:var(--text);}
+.pact-goal::before{content:'"';color:var(--accent);}
+.pact-goal::after{content:'"';color:var(--accent);}
+.meta-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.meta-box{background:var(--bg3);border-radius:10px;padding:13px 16px;}
+.meta-box .mb-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;font-family:'JetBrains Mono',monospace;}
+.meta-box .mb-val{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);}
+.countdown-row{display:flex;gap:8px;margin-bottom:18px;}
+.cd-box{flex:1;background:var(--bg3);border-radius:10px;padding:14px 8px;text-align:center;}
+.cd-num{font-size:26px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1;}
+.cd-unit{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px;font-family:'JetBrains Mono',monospace;}
+.prog-bar{height:6px;background:var(--bg4);border-radius:99px;overflow:hidden;margin-bottom:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.prog-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.penalty-warn{background:rgba(255,87,87,0.06);border:1px solid rgba(255,87,87,0.18);border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin:14px 0;}
+.pw-left .pw-label{font-size:12px;color:var(--muted2);margin-bottom:2px;}
+.pw-left .pw-eth{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.pw-pct{font-size:22px;font-weight:800;color:var(--red);font-family:'JetBrains Mono',monospace;}
+.btn-early-exit{width:100%;padding:12px;background:rgba(255,87,87,0.08);color:var(--red);border:1px solid rgba(255,87,87,0.2);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;margin-top:8px;}
+.btn-early-exit:hover{background:rgba(255,87,87,0.15);}
+.btn-claim-win{width:100%;padding:14px;background:var(--accent);color:#07090c;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;margin-top:8px;}
+.btn-claim-win:hover{filter:brightness(1.08);transform:translateY(-2px);}
+
+/* ── FEATURE CARDS ── */
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s;}
+.feat-card:hover{border-color:var(--border2);}
+.feat-icon{font-size:22px;margin-bottom:10px;}
+.feat-title{font-size:13px;font-weight:700;margin-bottom:5px;color:var(--text);}
+.feat-desc{font-size:12px;color:var(--muted2);line-height:1.55;}
+.feat-badge{display:inline-block;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;}
+.fb-new{background:rgba(180,255,71,0.1);color:var(--accent);border:1px solid rgba(180,255,71,0.2);}
+.fb-soon{background:rgba(71,180,255,0.1);color:var(--blue);border:1px solid rgba(71,180,255,0.2);}
+
+/* ── SIMULATOR ── */
+.sim-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:26px;}
+.sim-card h3{font-size:14px;font-weight:700;margin-bottom:4px;}
+.sim-card .sim-sub{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
+canvas#penaltyChart{width:100%;height:140px;display:block;border-radius:8px;}
+.sim-controls{display:flex;flex-direction:column;gap:12px;margin-top:18px;}
+.sim-row{display:flex;align-items:center;gap:12px;}
+.sim-row span{font-size:11px;color:var(--muted);min-width:100px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.sim-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;background:var(--bg4);border-radius:2px;outline:none;border:none;}
+.sim-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;}
+.sim-readout{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);min-width:56px;text-align:right;font-weight:700;}
+.sim-results{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.sim-res{background:var(--bg3);border-radius:10px;padding:14px 18px;}
+.sr-lbl{font-size:10px;color:var(--muted2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;}
+.sr-val{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.val-red{color:var(--red);}
+.val-green{color:var(--accent);}
+
+/* ── HOW IT WORKS ── */
+.how-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:26px;}
+.how-card h3{font-size:14px;font-weight:700;margin-bottom:18px;}
+.how-step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.how-step:last-child{border-bottom:none;padding-bottom:0;}
+.step-num{width:26px;height:26px;border-radius:7px;background:var(--accent-dim);border:1px solid rgba(180,255,71,0.2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;margin-top:1px;}
+.step-body h4{font-size:13px;font-weight:700;margin-bottom:3px;}
+.step-body p{font-size:12px;color:var(--muted2);line-height:1.55;}
+
+/* ── DEPOSIT PANEL ── */
+.deposit-panel{background:var(--bg2);border:1px solid var(--border);border-radius:18px;overflow:hidden;position:sticky;top:76px;}
+.dp-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);}
+.dp-header h2{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px;}
+.dp-header p{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.dp-body{padding:20px 24px 24px;display:flex;flex-direction:column;gap:18px;}
+
+/* ── TIER SELECTOR ── */
+.tier-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-family:'JetBrains Mono',monospace;}
+.tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.tier-btn{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all .2s;}
+.tier-btn:hover{border-color:var(--border2);}
+.tier-btn.sel{border-color:currentColor;}
+.tier-emoji{font-size:18px;margin-bottom:5px;}
+.tier-name{font-size:10px;font-weight:700;letter-spacing:.04em;font-family:'JetBrains Mono',monospace;}
+.tier-range{font-size:9px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.t-bronze{color:#cd7f32;}
+.t-silver{color:#a8a9ad;}
+.t-gold{color:#ffd700;}
+.t-diamond{color:#47b4ff;}
+
+/* ── CATEGORY SELECTOR ── */
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.cat-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .2s;font-size:10px;color:var(--muted2);font-weight:600;}
+.cat-btn:hover{border-color:var(--border2);color:var(--text);}
+.cat-btn.sel{background:var(--accent-dim);border-color:rgba(180,255,71,0.3);color:var(--accent);}
+.cat-icon{font-size:16px;display:block;margin-bottom:3px;}
+
+/* ── INPUTS ── */
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace;}
+.input-wrap{position:relative;}
+.input-wrap input[type=text],.input-wrap input[type=number]{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;border-radius:10px;padding:11px 14px;outline:none;transition:border-color .2s;}
+.input-wrap input:focus{border-color:rgba(180,255,71,0.4);}
+.input-suffix{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted2);font-weight:600;}
+textarea.goal-ta{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;font-weight:500;border-radius:10px;padding:11px 14px;outline:none;resize:none;transition:border-color .2s;line-height:1.5;height:72px;}
+textarea.goal-ta:focus{border-color:rgba(180,255,71,0.4);}
+.chars-count{font-size:10px;color:var(--muted);text-align:right;font-family:'JetBrains Mono',monospace;}
+.days-row{display:flex;align-items:center;gap:12px;}
+.days-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;color:var(--accent);min-width:44px;text-align:right;}
+input[type=range].days-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--bg4);border-radius:2px;outline:none;border:none;}
+input[type=range].days-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 0 3px rgba(180,255,71,0.2);}
+.days-marks{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:6px;}
+
+/* ── PREVIEW BOX ── */
+.preview-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.pv-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
+.pv-rows{display:flex;flex-direction:column;gap:7px;}
+.pv-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+.pv-row .pv-key{color:var(--muted2);}
+.pv-row .pv-val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);}
+.pv-row .pv-val.danger{color:var(--red);}
+.pv-row .pv-val.good{color:var(--accent);}
+
+/* ── SUBMIT BTN ── */
+.btn-deposit{width:100%;padding:15px;background:var(--accent);color:#07090c;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif;transition:all .25s;letter-spacing:.01em;}
+.btn-deposit:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 16px 40px rgba(180,255,71,0.2);}
+.btn-deposit:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none;}
+
+/* ── GOAL WALL ── */
+.goalwall-section{max-width:1140px;margin:0 auto;padding:0 36px 100px;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.section-title{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+.section-title span{color:var(--accent);}
+.filter-tabs{display:flex;gap:6px;}
+.ftab{background:var(--bg2);border:1px solid var(--border);color:var(--muted2);font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;letter-spacing:.04em;}
+.ftab:hover{color:var(--text);}
+.ftab.active{background:var(--accent-dim);border-color:rgba(180,255,71,0.25);color:var(--accent);}
+.gwall-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.saver-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:all .2s;position:relative;overflow:hidden;}
+.saver-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .2s;}
+.saver-card:hover::before{opacity:1;}
+.saver-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.saver-card.s-completed{border-color:rgba(180,255,71,0.2);}
+.saver-card.s-broken{border-color:rgba(255,87,87,0.2);}
+.sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.sc-addr{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted2);}
+.sc-goal{font-size:14px;font-weight:700;line-height:1.4;margin-bottom:10px;color:var(--text);}
+.sc-meta{display:flex;gap:10px;flex-wrap:wrap;}
+.sc-tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--muted);background:var(--bg3);padding:3px 9px;border-radius:999px;}
+.mini-bar{height:3px;background:var(--bg3);border-radius:99px;margin:12px 0 8px;overflow:hidden;}
+.mini-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));border-radius:99px;}
+.sc-footer{display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:32px;right:32px;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;z-index:999;transform:translateY(100px);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);max-width:360px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast-icon{font-size:18px;}
+
+/* ── DIVIDER ── */
+.section-divider{border:none;border-top:1px solid var(--border);margin:0;}
+
+/* ── FOOTER ── */
+.footer{background:var(--bg2);border-top:1px solid var(--border);padding:28px 36px;display:flex;align-items:center;justify-content:space-between;}
+.footer-logo{font-size:14px;font-weight:800;color:var(--accent);}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{font-size:12px;color:var(--muted2);text-decoration:none;font-family:'JetBrains Mono',monospace;transition:color .2s;}
+.footer-links a:hover{color:var(--text);}
+.footer-chain{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .main-wrap{grid-template-columns:1fr;padding:32px 20px 80px;}
+  .deposit-panel{position:static;}
+  .stats-strip{flex-wrap:wrap;}
+  .stat-item{min-width:50%;border-right:none;border-bottom:1px solid var(--border);}
+  .hero{padding:52px 20px 40px;}
+  nav{padding:0 20px;}
+  .goalwall-section{padding:0 20px 80px;}
+  .gwall-grid{grid-template-columns:1fr;}
+  .tier-grid{grid-template-columns:repeat(2,1fr);}
+  .feature-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-hex">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" stroke="#b4ff47" stroke-width="1.5" fill="rgba(180,255,71,0.08)"/>
+        <path d="M16 8L22 11.5V18.5L16 22L10 18.5V11.5L16 8Z" fill="#b4ff47" opacity=".7"/>
+      </svg>
+    </div>
+    <span class="logo-text"><span>Pact</span>Pool</span>
+  </a>
+  <div class="nav-links">
+    <a href="#deposit" class="active" onclick="switchTab('deposit',this)">Dashboard</a>
+    <a href="#goalwall" onclick="switchTab('goalwall',this)">Goal Wall</a>
+    <a href="#simulator" onclick="switchTab('simulator',this)">Simulator</a>
+    <a href="https://sepolia.etherscan.io" target="_blank" onclick="return true;">Contract ↗</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-chain"><div class="chain-dot"></div>Sepolia</div>
+    <button id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<div id="tab-deposit">
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge"><div class="badge-dot"></div>Commitment Capital Protocol · Live on Sepolia</div>
+  <h1>Save With<br><span class="line2">Skin in the Game</span></h1>
+  <p class="hero-sub">Lock ETH with a public savings goal. Break your pact early? You pay a dynamic penalty that rewards the savers who stayed committed.</p>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="document.getElementById('deposit-form').scrollIntoView({behavior:'smooth'})">Create a Pact →</button>
+    <button class="btn-secondary" onclick="switchTab('goalwall',document.querySelector('[onclick*=goalwall]'))">View Goal Wall</button>
+  </div>
+</div>
+
+<!-- ── STATS STRIP ── -->
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-val" id="stat-locked">—</div>
+    <div class="stat-label">ETH Locked</div>
+    <div class="stat-change">↑ Live</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" id="stat-pool">—</div>
+    <div class="stat-label">Penalty Pool</div>
+    <div class="stat-change">↑ Growing</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" id="stat-savers">—</div>
+    <div class="stat-label">Active Savers</div>
+    <div class="stat-change">↑ Since launch</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" id="stat-completed">—</div>
+    <div class="stat-label">Pacts Completed</div>
+    <div class="stat-change">↑ Successful</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" id="stat-avg">—</div>
+    <div class="stat-label">Avg. Bonus Earned</div>
+    <div class="stat-change">↑ Per winner</div>
+  </div>
+</div>
+
+<!-- ── LIVE TICKER ── -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="main-wrap">
+  <!-- LEFT COLUMN -->
+  <div class="left-col">
+
+    <!-- Active Pact (shown when connected + has pact) -->
+    <div class="active-pact" id="active-pact-card">
+      <div class="ap-header">
+        <h3>⬡ Your Active Pact</h3>
+        <span class="status-pill s-locked" id="pact-status">LOCKED</span>
+      </div>
+      <div class="ap-body">
+        <div class="pact-goal" id="pact-goal-text">Buy a new laptop for my startup</div>
+        <div class="meta-row">
+          <div class="meta-box"><div class="mb-label">Amount</div><div class="mb-val" id="pact-amount">0.05 ETH</div></div>
+          <div class="meta-box"><div class="mb-label">Unlock Date</div><div class="mb-val" id="pact-unlock">—</div></div>
+          <div class="meta-box"><div class="mb-label">Tier</div><div class="mb-val" id="pact-tier">Silver</div></div>
+          <div class="meta-box"><div class="mb-label">Reward Share</div><div class="mb-val" id="pact-share" style="color:var(--accent);">1.5×</div></div>
+        </div>
+        <div class="countdown-row">
+          <div class="cd-box"><div class="cd-num" id="cd-days">00</div><div class="cd-unit">Days</div></div>
+          <div class="cd-box"><div class="cd-num" id="cd-hours">00</div><div class="cd-unit">Hours</div></div>
+          <div class="cd-box"><div class="cd-num" id="cd-mins">00</div><div class="cd-unit">Mins</div></div>
+          <div class="cd-box"><div class="cd-num" id="cd-secs">00</div><div class="cd-unit">Secs</div></div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="pact-prog" style="width:40%"></div></div>
+        <div class="prog-meta"><span id="prog-start">Start</span><span id="prog-mid">40% complete</span><span id="prog-end">Unlock</span></div>
+        <div class="penalty-warn">
+          <div class="pw-left">
+            <div class="pw-label">Current Early Exit Penalty</div>
+            <div class="pw-eth" id="penalty-eth">— ETH if you withdraw now</div>
+          </div>
+          <div class="pw-pct" id="penalty-pct">—%</div>
+        </div>
+        <button class="btn-claim-win" id="claim-btn" onclick="handleWithdraw()" style="display:none">🎉 Claim ETH + Bonus Reward</button>
+        <button class="btn-early-exit" id="early-exit-btn" onclick="handleEarlyWithdraw()">⚠ Exit Early (Pay Penalty)</button>
+      </div>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="feature-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🎖️</div>
+        <div class="feat-title">Commitment Tiers</div>
+        <div class="feat-desc">Choose your stake level — Bronze to Diamond. Higher tiers mean bigger penalties but bigger reward multipliers.</div>
+        <span class="feat-badge fb-new">Live</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">👁️</div>
+        <div class="feat-title">Public Accountability</div>
+        <div class="feat-desc">Your goal is permanently public. The Goal Wall shows everyone who's committed and who broke their pact.</div>
+        <span class="feat-badge fb-new">Live</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🤝</div>
+        <div class="feat-title">Group Pacts</div>
+        <div class="feat-desc">Lock ETH together with up to 5 friends toward a shared goal. One person breaks = pool benefits the rest.</div>
+        <span class="feat-badge fb-soon">Coming Soon</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🏅</div>
+        <div class="feat-title">Proof-of-Discipline NFT</div>
+        <div class="feat-desc">Complete your pact on time and auto-mint a soul-bound NFT — an on-chain badge of financial discipline.</div>
+        <span class="feat-badge fb-soon">Coming Soon</span>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="how-card">
+      <h3>How PactPool Works</h3>
+      <div class="how-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Lock ETH with a Goal</h4>
+          <p>Choose a commitment tier, category, write your goal publicly, and set a lock period (1–365 days). Your ETH goes into the smart contract.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Your Goal Goes Public</h4>
+          <p>Your goal appears on the Goal Wall, visible to everyone. Accountability is built into the protocol — not just peer pressure.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Complete on Time → Earn Bonus</h4>
+          <p>Reach your unlock date? Withdraw your full ETH + a proportional share of the penalty pool. Others' failures fund your success.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Exit Early → Pay the Pool</h4>
+          <p>Withdraw before your unlock date and pay a 10–30% dynamic penalty. The further from unlock, the higher the penalty. Automatic, immutable.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN — DEPOSIT PANEL -->
+  <div class="deposit-panel" id="deposit-form">
+    <div class="dp-header">
+      <h2>Create a Pact</h2>
+      <p>Connect wallet → Set goal → Lock ETH</p>
+    </div>
+    <div class="dp-body">
+
+      <!-- TIER -->
+      <div>
+        <div class="tier-label">Commitment Tier</div>
+        <div class="tier-grid" id="tier-grid"></div>
+      </div>
+
+      <!-- CATEGORY -->
+      <div>
+        <div class="tier-label">Goal Category</div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+
+      <!-- GOAL INPUT -->
+      <div class="form-group">
+        <label>Your Public Goal</label>
+        <textarea class="goal-ta" id="goal-in" maxlength="100" placeholder="e.g., Save for my laptop, Emergency fund, Goa trip…" oninput="onGoalInput()"></textarea>
+        <div class="chars-count"><span id="chars-left">100</span> chars left</div>
+      </div>
+
+      <!-- AMOUNT INPUT -->
+      <div class="form-group">
+        <label>Amount to Lock</label>
+        <div class="input-wrap">
+          <input type="number" id="amt-in" placeholder="0.01" min="0.001" step="0.001" oninput="updatePreview()">
+          <span class="input-suffix">ETH</span>
+        </div>
+      </div>
+
+      <!-- DAYS SLIDER -->
+      <div class="form-group">
+        <label>Lock Period</label>
+        <div class="days-row">
+          <input type="range" class="days-slider" id="days-range" min="1" max="365" value="30" oninput="updatePreview()">
+          <span class="days-val" id="days-disp">30d</span>
+        </div>
+        <div class="days-marks"><span>1d</span><span>90d</span><span>180d</span><span>365d</span></div>
+      </div>
+
+      <!-- PREVIEW BOX -->
+      <div class="preview-box">
+        <div class="pv-title">Pact Preview</div>
+        <div class="pv-rows">
+          <div class="pv-row"><span class="pv-key">Amount Locked</span><span class="pv-val" id="pv-amt">—</span></div>
+          <div class="pv-row"><span class="pv-key">Unlock Date</span><span class="pv-val" id="pv-unlock">—</span></div>
+          <div class="pv-row"><span class="pv-key">Max Penalty</span><span class="pv-val danger" id="pv-max">—</span></div>
+          <div class="pv-row"><span class="pv-key">Min Penalty</span><span class="pv-val danger" id="pv-min">—</span></div>
+          <div class="pv-row"><span class="pv-key">Reward Share</span><span class="pv-val good" id="pv-share">—</span></div>
+        </div>
+      </div>
+
+      <!-- DEPOSIT BUTTON -->
+      <button class="btn-deposit" id="deposit-btn" onclick="handleDeposit()">
+        🔒 Lock ETH — Make Your Pact
+      </button>
+      <div style="font-size:10px;color:var(--muted);text-align:center;font-family:'JetBrains Mono',monospace;">
+        Immutable smart contract · Sepolia Testnet · No middleman
+      </div>
+
+    </div>
+  </div>
+</div>
+</div><!-- end tab-deposit -->
+
+<!-- ── GOAL WALL ── -->
+<div id="tab-goalwall" style="display:none">
+<div class="goalwall-section" style="padding-top:52px;">
+  <div class="section-header">
+    <div>
+      <div class="section-title">The <span>Goal Wall</span></div>
+      <div style="font-size:13px;color:var(--muted2);margin-top:4px;font-family:'JetBrains Mono',monospace;">Live on-chain commitment board</div>
+    </div>
+    <div class="filter-tabs">
+      <button class="ftab active" onclick="filterWall('all',this)">ALL</button>
+      <button class="ftab" onclick="filterWall('active',this)">ACTIVE</button>
+      <button class="ftab" onclick="filterWall('completed',this)">COMPLETED</button>
+      <button class="ftab" onclick="filterWall('broken',this)">BROKEN</button>
+    </div>
+  </div>
+  <div class="gwall-grid" id="gwall-grid"></div>
+</div>
+</div>
+
+<!-- ── SIMULATOR TAB ── -->
+<div id="tab-simulator" style="display:none">
+<div style="max-width:700px;margin:52px auto;padding:0 36px 100px;">
+  <div style="margin-bottom:32px;">
+    <div class="section-title">Penalty <span style="color:var(--accent)">Simulator</span></div>
+    <div style="font-size:13px;color:var(--muted2);margin-top:6px;font-family:'JetBrains Mono',monospace;">Visualise your exit cost before you commit</div>
+  </div>
+  <div class="sim-card" style="border-radius:18px;">
+    <h3>Dynamic Penalty Curve</h3>
+    <p class="sim-sub">Penalty = Base% + (Time Remaining / Total Duration × 20%). Early exit costs more. Discipline pays.</p>
+    <canvas id="penaltyChart"></canvas>
+    <div class="sim-controls">
+      <div class="sim-row"><span>Lock Period</span><input type="range" id="sim-days" min="7" max="365" value="30" oninput="updateSim()"><span class="sim-readout" id="sd-out">30d</span></div>
+      <div class="sim-row"><span>Amount (×0.001)</span><input type="range" id="sim-amt" min="1" max="200" value="50" oninput="updateSim()"><span class="sim-readout" id="sa-out">0.050</span></div>
+      <div class="sim-row"><span>Exit on Day</span><input type="range" id="sim-day" min="1" max="30" value="10" oninput="updateSim()"><span class="sim-readout" id="sday-out">Day 10</span></div>
+    </div>
+    <div class="sim-results">
+      <div class="sim-res"><div class="sr-lbl">You Lose</div><div class="sr-val val-red" id="sim-lose">—</div></div>
+      <div class="sim-res"><div class="sr-lbl">You Keep</div><div class="sr-val val-green" id="sim-keep">—</div></div>
+    </div>
+    <div style="margin-top:16px;padding:14px;background:rgba(180,255,71,0.06);border:1px solid rgba(180,255,71,0.15);border-radius:10px;font-size:12px;color:var(--muted2);font-family:'JetBrains Mono',monospace;line-height:1.6;">
+      💡 Pro tip: Higher commitment tiers (Gold/Diamond) have bigger penalties but earn <span style="color:var(--accent)">2–3× the reward share</span> from the penalty pool. If you know you'll stay committed — go Diamond.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── DIVIDER + FOOTER ── -->
+<hr class="section-divider">
+<div class="footer">
+  <div class="footer-logo">⬡ PactPool</div>
+  <div class="footer-links">
+    <a href="https://github.com" target="_blank">GitHub</a>
+    <a href="https://sepolia.etherscan.io" target="_blank">Etherscan</a>
+    <a href="#" onclick="switchTab('goalwall',document.querySelector('[onclick*=goalwall]'))">Goal Wall</a>
+  </div>
+  <div class="footer-chain">Sepolia Testnet · Solidity 0.8.20</div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <span id="toast-msg">Done!</span>
+</div>
+
+<script>
+// ── CONTRACT CONFIG ── (paste your deployed address + ABI here)
+const CONTRACT_ADDRESS = '0xaC8BaaBFACdE6AeafA4456FD27f849E095828891';
+const ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "lockDays",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "goal",
+        "type": "string"
+      }
+    ],
+    "name": "deposit",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "saver",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "unlockTime",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "goal",
+        "type": "string"
+      }
+    ],
+    "name": "Deposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "saver",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "penaltyAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "PenaltyAdded",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "saver",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "payout",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "penalized",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "penaltyAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawn",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "BASE_PENALTY_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "BASIS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXTRA_PENALTY_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllSavers",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPoolStats",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_totalLocked",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_penaltyPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_totalSavers",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "getSaverInfo",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "depositTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "unlockTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "goal",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "withdrawn",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "penalized",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "penaltyNow",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "progressPct",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "penaltyPool",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "saverList",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "savers",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "depositTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "unlockTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "goal",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "withdrawn",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "penalized",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalLocked",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]; // PASTE ABI HERE
+
+// ── TIERS ──
+const TIERS = {
+  bronze:  { name:'Bronze', emoji:'🥉', col:'#cd7f32', penaltyBase:10, penaltyMax:20, share:1.0, class:'t-bronze' },
+  silver:  { name:'Silver', emoji:'🥈', col:'#a8a9ad', penaltyBase:15, penaltyMax:25, share:1.5, class:'t-silver' },
+  gold:    { name:'Gold',   emoji:'🥇', col:'#ffd700', penaltyBase:20, penaltyMax:28, share:2.0, class:'t-gold'   },
+  diamond: { name:'💎',     emoji:'💎', col:'#47b4ff', penaltyBase:22, penaltyMax:30, share:3.0, class:'t-diamond'},
+};
+let selTier = 'silver';
+
+// ── CATEGORIES ──
+const CATS = [
+  {id:'edu',   icon:'📚', name:'Education'},
+  {id:'travel',icon:'✈️', name:'Travel'},
+  {id:'biz',   icon:'💼', name:'Business'},
+  {id:'gadget',icon:'💻', name:'Gadget'},
+  {id:'health',icon:'🏃', name:'Health'},
+  {id:'home',  icon:'🏠', name:'Home'},
+  {id:'invest',icon:'📈', name:'Invest'},
+  {id:'other', icon:'⭐', name:'Other'},
+];
+let selCat = null;
+
+// ── REAL CHAIN DATA (populated from blockchain) ──
+let allSavers = [];
+
+// ── WALLET STATE ──
+let provider, signer, userAddress, contract;
+let currentFilter = 'all';
+
+async function connectWallet() {
+  if (typeof window.ethereum === 'undefined') {
+    showToast('❌','MetaMask not found. Please install it.');
+    return;
+  }
+  try {
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    const btn = document.getElementById('wallet-btn');
+    btn.textContent = userAddress.slice(0,6)+'…'+userAddress.slice(-4);
+    btn.classList.add('connected');
+    if (CONTRACT_ADDRESS !== 'PASTE_CONTRACT_ADDRESS_HERE') {
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      await loadStats();
+      await checkUserPact();
+    } else {
+      showToast('❌','Contract address not set. Paste it into CONTRACT_ADDRESS.');
+    }
+  } catch(e) {
+    showToast('❌','Connection failed: '+e.message);
+  }
+}
+
+// ── LOAD STATS + GOAL WALL (read-only, no wallet needed) ──
+async function loadStatsPublic() {
+  try {
+    const roProvider = new ethers.providers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+    const roContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, roProvider);
+    const [locked, pool, count] = await roContract.getPoolStats();
+    document.getElementById('stat-locked').textContent   = parseFloat(ethers.utils.formatEther(locked)).toFixed(3);
+    document.getElementById('stat-pool').textContent     = parseFloat(ethers.utils.formatEther(pool)).toFixed(3);
+    document.getElementById('stat-savers').textContent   = count.toString();
+    // Fetch all saver details for goal wall + completed count
+    const addrs = await roContract.getAllSavers();
+    if (addrs.length > 0) {
+      const infos = await Promise.all(addrs.map(a => roContract.getSaverInfo(a)));
+      allSavers = addrs.map((addr, i) => ({ addr, ...infos[i] }));
+      const completed = allSavers.filter(s => s.withdrawn && !s.penalized).length;
+      document.getElementById('stat-completed').textContent = completed;
+      document.getElementById('stat-avg').textContent =
+        completed > 0 && pool.gt(0)
+          ? (parseFloat(ethers.utils.formatEther(pool)) / completed).toFixed(4)
+          : '—';
+    } else {
+      allSavers = [];
+      document.getElementById('stat-completed').textContent = '0';
+    }
+    renderGoalWall();
+    buildTickerFromChain(roContract);
+  } catch(e) { console.warn('loadStatsPublic error:', e); }
+}
+
+async function loadStats() {
+  try {
+    const [locked, pool, count] = await contract.getPoolStats();
+    document.getElementById('stat-locked').textContent   = parseFloat(ethers.utils.formatEther(locked)).toFixed(3);
+    document.getElementById('stat-pool').textContent     = parseFloat(ethers.utils.formatEther(pool)).toFixed(3);
+    document.getElementById('stat-savers').textContent   = count.toString();
+    const addrs = await contract.getAllSavers();
+    if (addrs.length > 0) {
+      const infos = await Promise.all(addrs.map(a => contract.getSaverInfo(a)));
+      allSavers = addrs.map((addr, i) => ({ addr, ...infos[i] }));
+      const completed = allSavers.filter(s => s.withdrawn && !s.penalized).length;
+      document.getElementById('stat-completed').textContent = completed;
+    }
+    renderGoalWall();
+  } catch(e) { console.warn('Stats load error', e); }
+}
+
+async function checkUserPact() {
+  try {
+    const info = await contract.getSaverInfo(userAddress);
+    if (info.amount.gt(0)) showActivePact(info);
+  } catch(e) {}
+}
+
+function showActivePact(info) {
+  const card = document.getElementById('active-pact-card');
+  card.style.display = 'block';
+  document.getElementById('pact-goal-text').textContent = info.goal || 'Your commitment';
+  document.getElementById('pact-amount').textContent = parseFloat(ethers.utils.formatEther(info.amount)).toFixed(4) + ' ETH';
+  const unlock = new Date(info.unlockTime.toNumber() * 1000);
+  document.getElementById('pact-unlock').textContent = unlock.toLocaleDateString('en-IN');
+  startCountdown(unlock);
+  updatePenaltyDisplay(info);
+}
+
+function startCountdown(target) {
+  function tick() {
+    const diff = target - Date.now();
+    if (diff <= 0) {
+      document.getElementById('cd-days').textContent = '00';
+      document.getElementById('cd-hours').textContent = '00';
+      document.getElementById('cd-mins').textContent = '00';
+      document.getElementById('cd-secs').textContent = '00';
+      document.getElementById('claim-btn').style.display = 'block';
+      document.getElementById('early-exit-btn').style.display = 'none';
+      document.getElementById('pact-status').textContent = 'MATURED';
+      document.getElementById('pact-status').className = 'status-pill s-matured';
+      return;
+    }
+    const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000);
+    const m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+    document.getElementById('cd-days').textContent  = String(d).padStart(2,'0');
+    document.getElementById('cd-hours').textContent = String(h).padStart(2,'0');
+    document.getElementById('cd-mins').textContent  = String(m).padStart(2,'0');
+    document.getElementById('cd-secs').textContent  = String(s).padStart(2,'0');
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+
+function updatePenaltyDisplay(info) {
+  const penaltyEth = parseFloat(ethers.utils.formatEther(info.penaltyNow)).toFixed(4);
+  const totalEth   = parseFloat(ethers.utils.formatEther(info.amount));
+  const pct        = ((parseFloat(penaltyEth) / totalEth) * 100).toFixed(1);
+  document.getElementById('penalty-pct').textContent = pct + '%';
+  document.getElementById('penalty-eth').textContent = penaltyEth + ' ETH if you withdraw now';
+  const pct2 = Math.min(100, info.progressPct.toNumber ? info.progressPct.toNumber() : parseInt(info.progressPct));
+  document.getElementById('pact-prog').style.width = pct2 + '%';
+  document.getElementById('prog-mid').textContent   = pct2 + '% complete';
+  // Will be called with contract data
+}
+
+async function handleDeposit() {
+  if (!userAddress) { showToast('🔑','Connect your wallet first!'); return; }
+  const amt  = parseFloat(document.getElementById('amt-in').value);
+  const days = parseInt(document.getElementById('days-range').value);
+  const goal = document.getElementById('goal-in').value.trim();
+  if (!amt || amt <= 0) { showToast('❌','Enter an amount!'); return; }
+  if (!goal) { showToast('❌','Write your goal!'); return; }
+  if (!selCat) { showToast('❌','Pick a category!'); return; }
+  const goalWithCat = `[${CATS.find(c=>c.id===selCat)?.icon||''}] ${goal}`;
+  if (CONTRACT_ADDRESS === 'PASTE_CONTRACT_ADDRESS_HERE') {
+    showToast('⬡','Demo: Pact created! (Paste contract address to go live on Sepolia)');
+    return;
+  }
+  try {
+    const tx = await contract.deposit(days, goalWithCat, {
+      value: ethers.utils.parseEther(amt.toString())
+    });
+    showToast('⏳','Transaction submitted… waiting for confirmation');
+    await tx.wait();
+    showToast('🎉','Pact created! Your commitment is now on-chain.');
+    await loadStats();
+    await checkUserPact();
+  } catch(e) {
+    showToast('❌', e.reason || e.message || 'Transaction failed');
+  }
+}
+
+async function handleWithdraw() {
+  if (!contract) { showToast('🔑','Connect wallet first.'); return; }
+  try {
+    const tx = await contract.withdraw();
+    showToast('⏳','Withdrawing…');
+    await tx.wait();
+    showToast('🎉','Claimed! ETH + bonus sent to your wallet.');
+    document.getElementById('active-pact-card').style.display = 'none';
+    await loadStats();
+  } catch(e) {
+    showToast('❌', e.reason || e.message);
+  }
+}
+
+async function handleEarlyWithdraw() {
+  const pct = document.getElementById('penalty-pct').textContent;
+  if (!confirm(`Exit early and pay ${pct} penalty? This is irreversible.`)) return;
+  await handleWithdraw();
+}
+
+async function loadGoalWall() {
+  // Reload from chain and re-render
+  await loadStatsPublic();
+}
+
+function renderGoalWall() {
+  const grid = document.getElementById('gwall-grid');
+  if (!grid) return;
+
+  let filtered = allSavers;
+  if (currentFilter === 'active')    filtered = allSavers.filter(s => !s.withdrawn && !s.penalized);
+  if (currentFilter === 'completed') filtered = allSavers.filter(s => s.withdrawn && !s.penalized);
+  if (currentFilter === 'broken')    filtered = allSavers.filter(s => s.penalized);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="color:var(--muted2);font-family:\'JetBrains Mono\',monospace;font-size:13px;padding:40px;text-align:center;grid-column:1/-1;">No pacts in this category yet.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(s => {
+    const isCompleted = s.withdrawn && !s.penalized;
+    const isBroken    = s.penalized;
+    const statusCls   = isCompleted ? 's-completed' : isBroken ? 's-broken' : '';
+    const pill = isCompleted
+      ? `<span class="status-pill s-matured" style="font-size:9px;padding:3px 10px;">COMPLETE</span>`
+      : isBroken
+      ? `<span class="status-pill s-broken" style="font-size:9px;padding:3px 10px;">BROKEN</span>`
+      : `<span class="status-pill s-locked" style="font-size:9px;padding:3px 10px;">ACTIVE</span>`;
+
+    const amtEth  = parseFloat(ethers.utils.formatEther(s.amount)).toFixed(4);
+    const pct     = Math.min(100, s.progressPct.toNumber ? s.progressPct.toNumber() : parseInt(s.progressPct));
+    const short   = s.addr.slice(0,6)+'…'+s.addr.slice(-4);
+    const unlock  = new Date((s.unlockTime.toNumber ? s.unlockTime.toNumber() : parseInt(s.unlockTime))*1000)
+                      .toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+
+    return `<div class="saver-card ${statusCls}">
+      <div class="sc-top">
+        <span class="sc-addr">${short}</span>
+        ${pill}
+      </div>
+      <div class="sc-goal">${escGoal(s.goal)}</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:${pct}%"></div></div>
+      <div class="sc-footer">
+        <span>${pct >= 100 ? '✅ Done' : pct+'% done'}</span>
+        <span>${amtEth} ETH · ${unlock}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escGoal(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function filterWall(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderGoalWall();
+}
+
+// ── UI BUILDERS ──
+function buildTiers() {
+  document.getElementById('tier-grid').innerHTML = Object.entries(TIERS).map(([k,t]) =>
+    `<div class="tier-btn ${k===selTier?'sel':''}" id="tier-${k}" style="${k===selTier?'border-color:'+t.col+';background:rgba(255,255,255,0.04)':''}" onclick="selTierFn('${k}')">
+      <div class="tier-emoji">${t.emoji}</div>
+      <div class="tier-name ${t.class}">${t.name}</div>
+      <div class="tier-range">${t.penaltyBase}–${t.penaltyMax}%</div>
+      <div class="tier-range" style="color:${t.col};margin-top:2px">${t.share}× share</div>
+    </div>`
+  ).join('');
+}
+
+function selTierFn(k) {
+  selTier = k;
+  buildTiers();
+  updatePreview();
+}
+
+function buildCats() {
+  document.getElementById('cat-grid').innerHTML = CATS.map(c =>
+    `<div class="cat-btn ${selCat===c.id?'sel':''}" id="cat-${c.id}" onclick="selCatFn('${c.id}')">
+      <span class="cat-icon">${c.icon}</span>${c.name}
+    </div>`
+  ).join('');
+}
+
+function selCatFn(id) {
+  selCat = selCat === id ? null : id;
+  buildCats();
+  updatePreview();
+}
+
+function onGoalInput() {
+  const v = document.getElementById('goal-in').value;
+  document.getElementById('chars-left').textContent = 100 - v.length;
+  updatePreview();
+}
+
+function updatePreview() {
+  const amt  = parseFloat(document.getElementById('amt-in').value) || 0;
+  const days = parseInt(document.getElementById('days-range').value) || 30;
+  const tier = TIERS[selTier];
+  document.getElementById('days-disp').textContent = days + 'd';
+  if (amt > 0) {
+    const unlockMs = Date.now() + days * 86400000;
+    document.getElementById('pv-amt').textContent    = amt.toFixed(4) + ' ETH';
+    document.getElementById('pv-unlock').textContent = new Date(unlockMs).toLocaleDateString('en-IN');
+    document.getElementById('pv-max').textContent    = (amt * tier.penaltyMax / 100).toFixed(4) + ' ETH (' + tier.penaltyMax + '%)';
+    document.getElementById('pv-min').textContent    = (amt * tier.penaltyBase / 100).toFixed(4) + ' ETH (' + tier.penaltyBase + '%)';
+    document.getElementById('pv-share').textContent  = tier.share + '× bonus multiplier';
+  } else {
+    ['pv-amt','pv-unlock','pv-max','pv-min','pv-share'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+  updateSim();
+}
+
+function updateSim() {
+  const ld  = parseInt(document.getElementById('sim-days')?.value) || 30;
+  const aX  = parseInt(document.getElementById('sim-amt')?.value) || 50;
+  const amt = aX * 0.001;
+  const wd  = Math.min(parseInt(document.getElementById('sim-day')?.value) || 10, ld - 1);
+  if (document.getElementById('sd-out')) document.getElementById('sd-out').textContent = ld + 'd';
+  if (document.getElementById('sa-out')) document.getElementById('sa-out').textContent = amt.toFixed(3);
+  if (document.getElementById('sim-day')) document.getElementById('sim-day').max = ld;
+  if (document.getElementById('sday-out')) document.getElementById('sday-out').textContent = 'Day ' + wd;
+  const remaining = ld - wd;
+  const pct = 0.10 + (remaining / ld) * 0.20;
+  const lose = amt * pct, keep = amt - lose;
+  if (document.getElementById('sim-lose')) document.getElementById('sim-lose').textContent = lose.toFixed(4) + ' ETH';
+  if (document.getElementById('sim-keep')) document.getElementById('sim-keep').textContent = keep.toFixed(4) + ' ETH';
+  drawCurve(ld, amt, wd);
+}
+
+function drawCurve(ld, amt, hd) {
+  const canvas = document.getElementById('penaltyChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 500, H = 140;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  const P = {t:12,r:20,b:28,l:44};
+  const gW = W - P.l - P.r, gH = H - P.t - P.b;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const gy = P.t + (i / 4) * gH;
+    ctx.beginPath(); ctx.moveTo(P.l, gy); ctx.lineTo(P.l + gW, gy); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.font = '10px JetBrains Mono,monospace'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) { ctx.fillText((30 - i * 5) + '%', P.l - 6, P.t + (i / 4) * gH + 4); }
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 4; i++) {
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillText('d' + Math.round((i / 4) * ld), P.l + (i / 4) * gW, H - P.b + 14);
+  }
+  // Draw penalty curve
+  const grad = ctx.createLinearGradient(P.l, 0, P.l + gW, 0);
+  grad.addColorStop(0, '#ff5757');
+  grad.addColorStop(1, '#b4ff47');
+  ctx.beginPath(); ctx.strokeStyle = '#ff5757'; ctx.lineWidth = 2.5;
+  for (let d = 0; d <= ld; d++) {
+    const rem = ld - d; const pp = 0.10 + (rem / ld) * 0.20;
+    const x = P.l + (d / ld) * gW, y = P.t + ((0.30 - pp) / 0.20) * gH;
+    if (d === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  const lastX = P.l + gW, lastY = P.t + gH;
+  ctx.lineTo(lastX, lastY); ctx.lineTo(P.l, lastY); ctx.closePath();
+  ctx.fillStyle = 'rgba(255,87,87,0.06)'; ctx.fill();
+  // Highlight point
+  const hx = P.l + (hd / ld) * gW;
+  ctx.beginPath(); ctx.strokeStyle = '#b4ff47'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+  ctx.moveTo(hx, P.t); ctx.lineTo(hx, P.t + gH); ctx.stroke(); ctx.setLineDash([]);
+  const rem2 = ld - hd; const hPct = 0.10 + (rem2 / ld) * 0.20;
+  const hy = P.t + ((0.30 - hPct) / 0.20) * gH;
+  ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI * 2); ctx.fillStyle = '#b4ff47'; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1; ctx.stroke();
+}
+
+// ── TICKER (real blockchain events) ──
+async function buildTickerFromChain(roContract) {
+  try {
+    const block = await roContract.provider.getBlockNumber();
+    const from  = Math.max(0, block - 2000);
+    const [depEvents, wdEvents] = await Promise.all([
+      roContract.queryFilter('Deposited', from, block),
+      roContract.queryFilter('Withdrawn',  from, block),
+    ]);
+
+    const items = [
+      ...depEvents.map(e => ({
+        t: 'green',
+        msg: `<strong>${e.args.saver.slice(0,6)}…${e.args.saver.slice(-4)}</strong> locked ${parseFloat(ethers.utils.formatEther(e.args.amount)).toFixed(3)} ETH — ${escGoal(e.args.goal)}`
+      })),
+      ...wdEvents.map(e => ({
+        t: e.args.penalized ? 'red' : 'green',
+        msg: e.args.penalized
+          ? `<strong>${e.args.saver.slice(0,6)}…${e.args.saver.slice(-4)}</strong> broke pact — ${parseFloat(ethers.utils.formatEther(e.args.penaltyAmount)).toFixed(4)} ETH added to pool`
+          : `<strong>${e.args.saver.slice(0,6)}…${e.args.saver.slice(-4)}</strong> completed pact ✅ — claimed ${parseFloat(ethers.utils.formatEther(e.args.payout)).toFixed(4)} ETH`
+      })),
+    ];
+
+    if (items.length === 0) {
+      // No events yet — show a placeholder
+      items.push({t:'blue', msg:'PactPool is live on Sepolia — be the first to make a pact!'});
+    }
+
+    const all = [...items, ...items]; // duplicate for seamless marquee
+    document.getElementById('ticker').innerHTML = all.map(e =>
+      `<div class="tick-item"><div class="tick-dot td-${e.t}"></div><span>${e.msg}</span></div>`
+    ).join('');
+  } catch(e) {
+    // Silently fail — ticker is cosmetic
+    document.getElementById('ticker').innerHTML =
+      '<div class="tick-item"><div class="tick-dot td-blue"></div><span>PactPool · Live on Sepolia Testnet</span></div>';
+    console.warn('Ticker error:', e);
+  }
+}
+
+function buildTicker() {
+  // Placeholder until chain data loads
+  document.getElementById('ticker').innerHTML =
+    '<div class="tick-item"><div class="tick-dot td-blue"></div><span>Loading on-chain events…</span></div>';
+}
+
+// ── TAB SWITCHING ──
+function switchTab(tab, el) {
+  ['deposit','goalwall','simulator'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (tab === 'goalwall') loadGoalWall();
+  if (tab === 'simulator') { setTimeout(updateSim, 100); }
+  window.scrollTo(0,0);
+}
+
+// ── TOAST ──
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  buildTiers();
+  buildCats();
+  buildTicker();       // placeholder text until chain loads
+  updatePreview();
+  // Load real stats immediately without wallet
+  loadStatsPublic();
+  // Auto-refresh every 20 seconds
+  setInterval(loadStatsPublic, 20000);
+  // Check if MetaMask already connected
+  if (typeof window.ethereum !== 'undefined') {
+    window.ethereum.request({method:'eth_accounts'}).then(accounts => {
+      if (accounts.length > 0) connectWallet();
+    });
+  }
+});
+
+window.addEventListener('resize', () => { if(document.getElementById('tab-simulator').style.display!=='none') updateSim(); });
+</script>
+</body>
+</html>
