@@ -2,16 +2,31 @@ const express = require("express");
 const path = require("path");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// Serve static files
+// ✅ serve all static files
 app.use(express.static(__dirname));
 
-// Default route
+// ✅ route for home page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
+// ✅ route for dashboard
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
+// ✅ route for goal wall (if separate file)
+app.get("/goalwall", (req, res) => {
+  res.sendFile(path.join(__dirname, "goalwall.html"));
+});
+
+// ✅ fallback (IMPORTANT)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
