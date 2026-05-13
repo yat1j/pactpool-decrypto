@@ -152,7 +152,7 @@ To go live with a real contract:
 |------|---------------|
 | Vaibhav | Smart Contract — Solidity, Remix, Etherscan verification |
 | Sai Samarth | Frontend — Deposit UI, wallet connect, active pact card |
-| Yatin arora | Frontend — Goal Wall, Simulator tab, ticker |
+| Yatin arora | Frontend and Backend — Goal Wall, Simulator tab, ticker and deployment|
 | Harsh Vardhan | Integration — ABI wiring, GitHub Pages deployment, demo prep |
 
 ---
