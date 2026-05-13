@@ -13,7 +13,7 @@ Lock ETH with a public savings goal. Break your pact early and pay a dynamic pen
 - Live Demo: pactpool-decrypto-production.up.railway.app
 - Contract (Sepolia): 0xaC8BaaBFACdE6AeafA4456FD27f849E095828891
 - Etherscan: https://sepolia.etherscan.io/address/PASTE_CONTRACT_ADDRESS_HERE
-- GitHub: https://github.com/harshvardhanxd/pactpool-decrypto
+- GitHub: https://github.com/yat1j/pactpool-decrypto
 
 ---
 
